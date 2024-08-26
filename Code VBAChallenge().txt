@@ -1,0 +1,121 @@
+Sub VBAChallenge()
+
+    Dim ws As Worksheet
+    Dim i As Long
+    Dim lastRow As Long
+    Dim summaryRow As Long
+    Dim tickName As String
+    Dim tickOpen As Double
+    Dim tickClose As Double
+    Dim tickTotal As Double
+    Dim endRow As Long
+    
+    Dim maxPercent As Double
+    Dim minPercent As Double
+    Dim maxVolume As Double
+    
+    Dim maxPercentTicker As String
+    Dim minPercentTicker As String
+    Dim maxVolumeTicker As String
+    
+    For Each ws In Worksheets
+    
+        ' Initialize variables
+        tickTotal = 0
+        summaryRow = 2
+        
+        ' Setup headers
+        ws.Cells(1, 9).Value = "Ticker"
+        ws.Cells(1, 10).Value = "Quarterly Change"
+        ws.Cells(1, 11).Value = "Percent Change"
+        ws.Cells(1, 12).Value = "Total Stock Volume"
+        ws.Cells(1, 16).Value = "Ticker"
+        ws.Cells(1, 17).Value = "Value"
+        ws.Cells(2, 15).Value = "Greatest % Increase"
+        ws.Cells(3, 15).Value = "Greatest % Decrease"
+        ws.Cells(4, 15).Value = "Greatest Total Volume"
+        
+        ' Find the last row of data
+        lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+        
+        ' Initialize values for the first ticker
+        tickOpen = ws.Cells(2, 3).Value
+        
+        For i = 2 To lastRow
+            If ws.Cells(i + 1, 1).Value <> ws.Cells(i, 1).Value Then
+                ' Ticker name
+                tickName = ws.Cells(i, 1).Value
+                tickClose = ws.Cells(i, 6).Value
+                
+                ' Calculate and record data
+                ws.Cells(summaryRow, 9).Value = tickName
+                ws.Cells(summaryRow, 10).Value = tickClose - tickOpen
+                ws.Cells(summaryRow, 11).Value = (tickClose - tickOpen) / tickOpen
+                ws.Cells(summaryRow, 11).NumberFormat = "0.00%"
+                ws.Cells(summaryRow, 12).Value = tickTotal
+                
+                ' Update summary row
+                summaryRow = summaryRow + 1
+                
+                ' Reset for the next ticker
+                tickTotal = 0
+                tickOpen = ws.Cells(i + 1, 3).Value
+            Else
+                ' Accumulate total volume for the ticker
+                tickTotal = tickTotal + ws.Cells(i, 7).Value
+            End If
+        Next i
+        
+        ' Format quarterly change column
+        Dim endRow2 As Long
+        endRow2 = ws.Cells(ws.Rows.Count, "J").End(xlUp).Row
+        For i = 2 To endRow2
+            If ws.Cells(i, 10).Value > 0 Then
+                ws.Cells(i, 10).Interior.Color = RGB(0, 255, 0)
+            ElseIf ws.Cells(i, 10).Value < 0 Then
+                ws.Cells(i, 10).Interior.Color = RGB(255, 0, 0)
+            End If
+        Next i
+        
+        ' Find greatest % Increase, % Decrease, and total volume
+        maxPercent = -1
+        minPercent = 1
+        maxVolume = 0
+        
+        For i = 2 To endRow2
+            If ws.Cells(i, 11).Value > maxPercent Then
+                maxPercent = ws.Cells(i, 11).Value
+                maxPercentTicker = ws.Cells(i, 9).Value
+            End If
+            
+            If ws.Cells(i, 11).Value < minPercent Then
+                minPercent = ws.Cells(i, 11).Value
+                minPercentTicker = ws.Cells(i, 9).Value
+            End If
+            
+            If ws.Cells(i, 12).Value > maxVolume Then
+                maxVolume = ws.Cells(i, 12).Value
+                maxVolumeTicker = ws.Cells(i, 9).Value
+            End If
+        Next i
+        
+        ' Output results
+        ws.Cells(2, 16).Value = maxPercentTicker
+        ws.Cells(2, 17).Value = maxPercent
+        ws.Cells(2, 17).NumberFormat = "0.00%"
+        
+        ws.Cells(3, 16).Value = minPercentTicker
+        ws.Cells(3, 17).Value = minPercent
+        ws.Cells(3, 17).NumberFormat = "0.00%"
+        
+        ws.Cells(4, 16).Value = maxVolumeTicker
+        ws.Cells(4, 17).Value = maxVolume
+        
+        ' Autofit columns
+        ws.Columns("I:Q").AutoFit
+        
+    Next ws
+    
+    MsgBox "All pages have been processed."
+    
+End Sub
